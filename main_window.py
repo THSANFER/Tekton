@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                              QListWidget, QStackedWidget, QLabel, QPushButton, 
                              QTableWidget, QTableWidgetItem, QLineEdit, QTextEdit, 
                              QDateEdit, QHeaderView, QComboBox, QMessageBox, 
-                             QFormLayout, QDoubleSpinBox) # <<< ADICIONADO AQUI
+                             QFormLayout, QDoubleSpinBox)
 from PyQt5.QtCore import Qt, QDate
 from PyQt5.QtGui import QFont
 import database as db
@@ -69,6 +69,7 @@ class MainWindow(QMainWindow):
         self.load_dashboard_data()
 
     def create_inicio_page(self):
+        ### MODIFICADO: Adicionada uma coluna a mais em cada tabela ###
         page = QWidget()
         layout = QVBoxLayout(page)
         title_label = QLabel("Dashboard - Resumo Atual")
@@ -79,8 +80,8 @@ class MainWindow(QMainWindow):
         left_layout = QVBoxLayout(left_panel)
         left_layout.addWidget(QLabel("<b>Pedidos Atuais (Pendentes ou em Produção)</b>"), alignment=Qt.AlignCenter)
         self.dashboard_atuais_table = QTableWidget()
-        self.dashboard_atuais_table.setColumnCount(4)
-        self.dashboard_atuais_table.setHorizontalHeaderLabels(["ID", "Cliente", "Data", "Status"])
+        self.dashboard_atuais_table.setColumnCount(5) # Aumentado de 4 para 5
+        self.dashboard_atuais_table.setHorizontalHeaderLabels(["ID", "Cliente", "Data", "Status", "Detalhes"])
         self.dashboard_atuais_table.setEditTriggers(QTableWidget.NoEditTriggers)
         self.dashboard_atuais_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         left_layout.addWidget(self.dashboard_atuais_table)
@@ -88,8 +89,8 @@ class MainWindow(QMainWindow):
         right_layout = QVBoxLayout(right_panel)
         right_layout.addWidget(QLabel("<b>Pedidos com Pagamento Pendente</b>"), alignment=Qt.AlignCenter)
         self.dashboard_pagamentos_table = QTableWidget()
-        self.dashboard_pagamentos_table.setColumnCount(3)
-        self.dashboard_pagamentos_table.setHorizontalHeaderLabels(["ID", "Cliente", "Valor a Pagar"])
+        self.dashboard_pagamentos_table.setColumnCount(4) # Aumentado de 3 para 4
+        self.dashboard_pagamentos_table.setHorizontalHeaderLabels(["ID", "Cliente", "Valor a Pagar", "Detalhes"])
         self.dashboard_pagamentos_table.setEditTriggers(QTableWidget.NoEditTriggers)
         self.dashboard_pagamentos_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         right_layout.addWidget(self.dashboard_pagamentos_table)
@@ -199,25 +200,34 @@ class MainWindow(QMainWindow):
         self.pedido_lucro_spinbox.valueChanged.connect(self.update_order_totals)
     
     def load_dashboard_data(self):
+        ### MODIFICADO: Adicionado o botão "Ver Detalhes" ###
         self.dashboard_atuais_table.setRowCount(0)
         pedidos_atuais = db.get_pedidos_atuais()
-        for r,p in enumerate(pedidos_atuais):
+        for r, p in enumerate(pedidos_atuais):
             self.dashboard_atuais_table.insertRow(r)
-            self.dashboard_atuais_table.setItem(r, 0, QTableWidgetItem(str(p['id_pedido'])))
+            pedido_id = p['id_pedido']
+            self.dashboard_atuais_table.setItem(r, 0, QTableWidgetItem(str(pedido_id)))
             self.dashboard_atuais_table.setItem(r, 1, QTableWidgetItem(p['nome_cliente']))
             self.dashboard_atuais_table.setItem(r, 2, QTableWidgetItem(p['data_pedido']))
             self.dashboard_atuais_table.setItem(r, 3, QTableWidgetItem(p['status']))
+            details_btn = QPushButton("Ver Detalhes")
+            details_btn.clicked.connect(lambda _, pid=pedido_id: self.show_pedido_details_by_id(pid))
+            self.dashboard_atuais_table.setCellWidget(r, 4, details_btn)
 
         self.dashboard_pagamentos_table.setRowCount(0)
         pedidos_nao_pagos = db.get_pedidos_nao_pagos()
         total_a_receber = 0.0
-        for r,p in enumerate(pedidos_nao_pagos):
+        for r, p in enumerate(pedidos_nao_pagos):
             self.dashboard_pagamentos_table.insertRow(r)
-            self.dashboard_pagamentos_table.setItem(r, 0, QTableWidgetItem(str(p['id_pedido'])))
+            pedido_id = p['id_pedido']
+            self.dashboard_pagamentos_table.setItem(r, 0, QTableWidgetItem(str(pedido_id)))
             self.dashboard_pagamentos_table.setItem(r, 1, QTableWidgetItem(p['nome_cliente']))
             valor = p['valor_total']
             total_a_receber += valor
             self.dashboard_pagamentos_table.setItem(r, 2, QTableWidgetItem(f"R$ {valor:.2f}"))
+            details_btn = QPushButton("Ver Detalhes")
+            details_btn.clicked.connect(lambda _, pid=pedido_id: self.show_pedido_details_by_id(pid))
+            self.dashboard_pagamentos_table.setCellWidget(r, 3, details_btn)
         
         if total_a_receber > 0:
             r_count = self.dashboard_pagamentos_table.rowCount()
@@ -233,7 +243,7 @@ class MainWindow(QMainWindow):
         self.vendas_table.blockSignals(True)
         self.vendas_table.setRowCount(0)
         pedidos = db.get_all_pedidos_com_cliente(self.search_input_vendas.text())
-        for r,p in enumerate(pedidos):
+        for r, p in enumerate(pedidos):
             self.vendas_table.insertRow(r)
             p_id = p['id_pedido']
             self.vendas_table.setItem(r, 0, QTableWidgetItem(str(p_id)))
@@ -384,3 +394,5 @@ class MainWindow(QMainWindow):
                 QMessageBox.critical(self, "Erro", "Não foi possível salvar o pedido.")
         finally:
             self.confirmar_pedido_btn.setEnabled(True)
+
+# O código restante, como `if __name__ == '__main__':`, deve estar no arquivo `main.py` principal.
