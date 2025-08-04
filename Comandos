@@ -1,0 +1,6 @@
+npm --version
+npm init -y
+npm install typescript ts-node nodemon @types/node
+npm run build
+npm run start
+
