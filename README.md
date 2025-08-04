@@ -18,3 +18,12 @@ Tektõn/
     ├── main_window.py    # Contém a classe QMainWindow principal da aplicação.
     │
     └── dialogs.py        # Contém todas as classes QDialog (janelas pop-up).
+
+
+
+
+
+
+
+
+https://dontpad.com/curso-lions
